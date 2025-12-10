@@ -28,80 +28,76 @@ import java.util.Map;
  *  The {@code TextCompressor} class provides static methods for compressing
  *  and expanding natural language through textfile input.
  *
- *  @author Zach Blick, YOUR NAME HERE
+ *  @author Zach Blick, Hannah Bernthal
  */
 public class TextCompressor {
-
-    // Two letter common words.
-    public static final int be = 1;
-    public static final int to = 2;
-    public static final int of = 3;
-    public static final int in = 6;
-    public static final int he = 14;
-    public static final int as = 15;
-    public static final int on = 12;
-    public static final int it = 10;
-    public static final int at = 17;
-
-    // Three letter
-    public static final int the = 0;
-    public static final int not = 11;
-    public static final int and = 4;
-    public static final int you = 16;
-
-    // Four letter
-    public static final int that = 7;
-    public static final int have = 8;
-    public static final int with = 13;
-
-
+    public static final int bitChunk = 12;
 
     private static void compress() {
 
-        String s = BinaryStdIn.readString();
-        int n = s.length();
+        TST TST = new TST();
+        String text = BinaryStdIn.readString();
+        int length = text.length();
+        int index = 0;
 
-        BinaryStdOut.write(n);
+        // New codes start at 81
+        int newCodes = 81;
+        int EOF = 80;
 
-        // Write out each character
-//        for (int i = 0; i < n; i++) {
-//            if (i + 1 <= n && s.substring(i,i+1).equals("a")) {
-//                BinaryStdOut.write(a);
-//            }
-//            if (i + 1 <= n && s.substring(i,i+1).equals("I")) {
-//                BinaryStdOut.write(a);
-//            }
+        // Variables used in compress
+        String prefix;
+        int preCode;
+        int newIndex;
+        String newPrefix;
 
+        // 12 bits can represent 4096 codes, so the max "new code" value is 4095 because you start at 0.
+        int max = 4095;
 
+        // Go through each letter in the string, starting at 0.
+        while (index < length) {
+            // Find the longest prefix
+            prefix = TST.getLongestPrefix(text, index);
 
-//        }
+            // Find the code with that prefix
+            preCode = TST.lookup(prefix);
 
-        String text = "hi i am testing if this even words";
-        String[] words = text.split(" ");
+            // Write out the code to the file
+            BinaryStdOut.write(preCode, bitChunk);
 
-        HashMap<String, Integer> counts = new HashMap<>();
+            // Create temporary index variable to look ahead and add new prefix
+            newIndex = index + prefix.length() + 1;
 
-        for (int i = 0; i < words.length; i++) {
-            int count = 0;
+            // Check to make sure there is space to even look ahead in both the dictionary AND the text
+            if (newCodes < max && newIndex < length) {
 
-            // rescans entire list for each word
-            for (int j = 0; j < words.length; j++) {
-                if (words[i].equals(words[j])) {
-                    count++;
-                }
+                // Add to our current prefix the first char after our previous prefix.
+                newPrefix = prefix + text.charAt(newIndex);
+
+                // Add the new prefix to our TST.
+                TST.insert(newPrefix, newCodes);
+
+                // Index the number to prime it for the next code.
+                newCodes++;
+
             }
 
-            counts.put(words[i], count);
+            index++;
+
         }
 
-        // Here I would theoretically make escape keys for the words that appeared a bunch.
-
+        // Write the EOF marker.
+        BinaryStdOut.write(EOF, bitChunk);
         BinaryStdOut.close();
     }
 
     private static void expand() {
+        String[] map = new String[numBits];
 
-        // TODO: Complete the expand() method
+        if (map[lookupCode] == null) {
+            String lookaheadString = map[index] + map[index].charAt(0);
+            BinaryStdOut.write(lookaheadString);
+        }
+
 
         BinaryStdOut.close();
     }
