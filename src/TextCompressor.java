@@ -33,42 +33,49 @@ import java.util.Map;
 public class TextCompressor {
     public static final int bitChunk = 12;
 
+    // 12 bits can represent 4096 codes, so the max "new code" value is 4095 because you start at 0.
+    public static final int max = 4095;
+    public static final int EOF = 128;
+
+
     private static void compress() {
 
         TST TST = new TST();
         String text = BinaryStdIn.readString();
         int length = text.length();
         int index = 0;
+        // New codes start at 129 (first available number).
+        int newCodes = 129;
 
-        // New codes start at 81
-        int newCodes = 81;
-        int EOF = 80;
 
-        // Variables used in compress
+        // Variables used in compress.
         String prefix;
         int preCode;
         int newIndex;
         String newPrefix;
 
-        // 12 bits can represent 4096 codes, so the max "new code" value is 4095 because you start at 0.
-        int max = 4095;
+        // Fill TST with the ASCII alphabet.
+        for (int i = 0; i < 128; i++) {
+            TST.insert("" + (char) i, i);
+        }
+
 
         // Go through each letter in the string, starting at 0.
         while (index < length) {
-            // Find the longest prefix
+            // Find the longest prefix.
             prefix = TST.getLongestPrefix(text, index);
 
-            // Find the code with that prefix
+            // Find the code with that prefix.
             preCode = TST.lookup(prefix);
 
-            // Write out the code to the file
+            // Write out the code to the file.
             BinaryStdOut.write(preCode, bitChunk);
 
-            // Create temporary index variable to look ahead and add new prefix
-            newIndex = index + prefix.length() + 1;
+            // Create temporary index variable to look ahead and add new prefix.
+            newIndex = index + prefix.length();
 
-            // Check to make sure there is space to even look ahead in both the dictionary AND the text
-            if (newCodes < max && newIndex < length) {
+            // Check to make sure there is space to even look ahead in both the dictionary AND the text.
+            if (newCodes <= max && newIndex < length) {
 
                 // Add to our current prefix the first char after our previous prefix.
                 newPrefix = prefix + text.charAt(newIndex);
@@ -76,12 +83,12 @@ public class TextCompressor {
                 // Add the new prefix to our TST.
                 TST.insert(newPrefix, newCodes);
 
-                // Index the number to prime it for the next code.
+                // Index the number to get it ready for the next code.
                 newCodes++;
 
             }
 
-            index++;
+            index = newIndex;
 
         }
 
@@ -91,14 +98,50 @@ public class TextCompressor {
     }
 
     private static void expand() {
-        String[] map = new String[numBits];
+        String[] map = new String[max + 1];
+        int lookaheadCode;
+        String nextPrefix;
+        int newCodes = 129;
 
-        if (map[lookupCode] == null) {
-            String lookaheadString = map[index] + map[index].charAt(0);
-            BinaryStdOut.write(lookaheadString);
+
+        // Fill map with the ASCII alphabet.
+        for (int i = 0; i < 128; i++) {
+            map[i] = "" + (char) i;
         }
 
+        // Read in the first code.
+        int currentCode = BinaryStdIn.readInt(bitChunk);
 
+        while (currentCode != EOF) {
+            // Find current prefix based on key.
+            String prefix = map[currentCode];
+
+            // Write prefix to file.
+
+            //TODO: PREFIX IS NULL
+            BinaryStdOut.write(prefix);
+
+            lookaheadCode = BinaryStdIn.readInt(bitChunk);
+
+            // If there's space, add the first letter of the lookahead String to the map.
+            if (newCodes <= max && lookaheadCode != EOF) {
+                String lookAheadString = map[lookaheadCode];
+
+                // Edge case for when the lookaheadCode was immediately used after being made.
+                if (lookAheadString == null) {
+                    nextPrefix = prefix + prefix.charAt(0);
+                }
+                else {
+                    nextPrefix = prefix + lookAheadString.charAt(0);
+                }
+
+                // Fill in the next prefix to the map.
+                map[newCodes] = nextPrefix;
+                newCodes++;
+            }
+            // Index forwards.
+            currentCode = lookaheadCode;
+        }
         BinaryStdOut.close();
     }
 
