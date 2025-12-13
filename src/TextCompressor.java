@@ -33,8 +33,8 @@ import java.util.Map;
 public class TextCompressor {
     public static final int bitChunk = 12;
 
-    // 12 bits can represent 4096 codes, so the max "new code" value is 4095 because you start at 0.
-    public static final int max = 4095;
+    // 12 bits can represent 4096 codes.
+    public static final int max = 4096;
     public static final int EOF = 128;
 
 
@@ -75,7 +75,7 @@ public class TextCompressor {
             newIndex = index + prefix.length();
 
             // Check to make sure there is space to even look ahead in both the dictionary AND the text.
-            if (newCodes <= max && newIndex < length) {
+            if (newCodes < max && newIndex < length) {
 
                 // Add to our current prefix the first char after our previous prefix.
                 newPrefix = prefix + text.charAt(newIndex);
@@ -84,7 +84,7 @@ public class TextCompressor {
                 TST.insert(newPrefix, newCodes);
 
                 // Index the number to get it ready for the next code.
-                newCodes++;
+                newCodes ++;
 
             }
 
@@ -102,30 +102,29 @@ public class TextCompressor {
         int lookaheadCode;
         String nextPrefix;
         int newCodes = 129;
+        String lookAheadString;
+        String prefix;
 
+        // Read in the first code.
+        int currentCode = BinaryStdIn.readInt(bitChunk);
 
         // Fill map with the ASCII alphabet.
         for (int i = 0; i < 128; i++) {
             map[i] = "" + (char) i;
         }
 
-        // Read in the first code.
-        int currentCode = BinaryStdIn.readInt(bitChunk);
-
         while (currentCode != EOF) {
             // Find current prefix based on key.
-            String prefix = map[currentCode];
+            prefix = map[currentCode];
 
             // Write prefix to file.
-
-            //TODO: PREFIX IS NULL
             BinaryStdOut.write(prefix);
 
             lookaheadCode = BinaryStdIn.readInt(bitChunk);
 
             // If there's space, add the first letter of the lookahead String to the map.
-            if (newCodes <= max && lookaheadCode != EOF) {
-                String lookAheadString = map[lookaheadCode];
+            if (newCodes < max && lookaheadCode != EOF) {
+                lookAheadString = map[lookaheadCode];
 
                 // Edge case for when the lookaheadCode was immediately used after being made.
                 if (lookAheadString == null) {
